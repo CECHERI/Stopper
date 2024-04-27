@@ -1,12 +1,13 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+// 스위치 누르면 하면 실시간으로 UI도 같이 변경 되는 건 못함
+// * 안되는 이유를 생각 해 봤는데 활성화 스위치를 눌러도 저장이 되기 전 까지는 변한게 아니니까
+// UI도 저장 버튼 누르기 전까지 안 변하는 게 아닐까 싶네...
 
 //main
 void main() {
   runApp(
-      MyApp(
-        //리본 제거
-        //debugShowCheckedModeBanner: false,
-      ),
+      MyApp(),
   );
 }
 
@@ -54,42 +55,39 @@ class _AddDevice extends State<AddButtons> {
     return Scaffold(
     body: Column(
     children: [
-    Expanded(
-    child: ListView.builder(
-      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 50.0),  // 상하좌우 패딩 설정
-      scrollDirection: Axis.horizontal,
-      itemCount: buttons.length,
-            itemBuilder: (context, index) {
-              return Container(
-                margin: EdgeInsets.symmetric(horizontal: 30.0),  // 좌우 간격 설정
-                //이미지
-                child: InkWell(
-                  onTap: () => _showEditDialog(index), //눌렀을 때 작은 창 띄우기
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Container(
-                        height: 150,
-                        width: 150,
-                        child: Image.asset('images/devices.png', fit: BoxFit.cover),
-                      ),
-                      Text(buttons[index].name,
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      ),
-                    ],
+      Expanded(
+      child: LisgittView.builder(
+        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 50.0),  // 상하좌우 패딩 설정
+        scrollDirection: Axis.horizontal,
+        itemCount: buttons.length,
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: EdgeInsets.symmetric(horizontal: 30.0),  // 좌우 간격 설정
+                  //이미지
+                  child: InkWell(
+                    onTap: () => _showEditDialog(index), //눌렀을 때 작은 창 띄우기
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Container(
+                          height: 150,
+                          width: 150,
+                          child: Image.asset('images/devices.png', fit: BoxFit.cover),
+                        ),
+                        Text(buttons[index].name,
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),),
+                      ],
+                    ),
                   ),
-                ),
-              );
-              },
-            ),
-          ),
-        ]
-      ),
+                );},
+      ),),]
+    ),
       //추가 버튼 상세 설정
+
       floatingActionButton: FloatingActionButton(
         onPressed: _addButton,
         child: Icon(Icons.add, color: Colors.black, size: 30),
@@ -111,6 +109,9 @@ class _AddDevice extends State<AddButtons> {
   //기기 클릭시
   void _showEditDialog(int index) {
     TextEditingController nameController = TextEditingController(text: buttons[index].name);
+    bool tempIsActive1 = buttons[index].isActive1;
+    bool tempIsActive2 = buttons[index].isActive2;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -149,10 +150,10 @@ class _AddDevice extends State<AddButtons> {
                     children: [
                       Text('활성화  '),
                       Switch(
-                        value: buttons[index].isActive1,  // 첫 번째 스위치 상태
+                        value: tempIsActive1,
                         onChanged: (bool value) {
                           setState(() {
-                            buttons[index].isActive1 = value;  // 첫 번째 스위치 상태 업데이트
+                            tempIsActive1 = value;
                           });
                         },
                         activeTrackColor: Colors.black54,  // 스위치 트랙 색상 변경
@@ -164,10 +165,10 @@ class _AddDevice extends State<AddButtons> {
                     children: [
                       Text(' 알  림  '),
                       Switch(
-                        value: buttons[index].isActive2,  // 두 번째 스위치 상태
+                        value: tempIsActive2,  // 두 번째 스위치 상태
                         onChanged: (bool value) {
                           setState(() {
-                            buttons[index].isActive2 = value;  // 두 번째 스위치 상태 업데이트
+                            tempIsActive2 = value;
                           });
                         },
                         activeTrackColor: Colors.black54,  // 스위치 트랙 색상 변경
@@ -178,27 +179,45 @@ class _AddDevice extends State<AddButtons> {
               )
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('취소', style: TextStyle(color: Colors.black54)),
+          actions: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                //기기 삭제
+                IconButton(
+                icon: Icon(Icons.delete, color: Colors.black45),
+                onPressed: () {
+                  setState(() {
+                    buttons.removeAt(index);
+                  });
+                  Navigator.of(context).pop(); // 대화상자 닫기
+                },
+              ),
+                Spacer(),
+                //취소
+                TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('취소', style: TextStyle(color: Colors.black54)),
+              ),
+                //저장
+                TextButton(
+                onPressed: () {
+                  showApplyToAllDevicesDialog(index, tempIsActive1, tempIsActive2);
+                },
+                child: Text('저장', style: TextStyle(color: Colors.black54)),
+              ),
+              ],
             ),
-            TextButton(
-              onPressed: () {
-                showApplyToAllDevicesDialog(index, nameController.text);
-              },
-              child: Text('저장', style: TextStyle(color: Colors.black54)),
-            ),
-          ],
+          ]
         );
       },
     );
   }
 
-  // '모든 기기에 적용 하시겠습니까?' 대화상자
-  void showApplyToAllDevicesDialog(int index, String newName) {
+  //전체 변경 확인 창
+  void showApplyToAllDevicesDialog(int index, bool newIsActive1, bool newIsActive2) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -208,30 +227,27 @@ class _AddDevice extends State<AddButtons> {
             TextButton(
               child: Text('아니오'),
               onPressed: () {
-                // 변경사항을 현재 기기에만 적용
+                // 변경사항을 현재 기기에 적용
                 setState(() {
-                  buttons[index].name = nameController.text;
-                  Navigator.of(context).pop();
+                  buttons[index].isActive1 = newIsActive1;
+                  buttons[index].isActive2 = newIsActive2;
                 });
-
-                setState(() {
-                  buttons[index].name = newName.;
-                });
-                //Navigator.of(context).pop();  // 현재 대화상자 닫기
-                //Navigator.of(context).pop();  // 편집 대화상자 닫기
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
               },
             ),
             TextButton(
               child: Text('예'),
               onPressed: () {
-                // 변경사항을 모든 기기에 적용
+                // 변경사항을 모든 기기에만 적용
                 setState(() {
                   for (var button in buttons) {
-                    button.name = newName;
+                    button.isActive1 = newIsActive1;
+                    button.isActive2 = newIsActive2;
                   }
                 });
-                //Navigator.of(context).pop();  // 현재 대화상자 닫기
-                //Navigator.of(context).pop();  // 편집 대화상자 닫기
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
               },
             ),
           ],
