@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "655369335313",
+    "firebase_url": "https://stopper-9acb4-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "stopper-9acb4",
+    "storage_bucket": "stopper-9acb4.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:655369335313:android:1b2125b3d04b8845ae77b0",
+        "android_client_info": {
+          "package_name": "com.example.stopper"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDoNX8ZZrLqC3QvZND96y3cipPd7uvoUWA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
