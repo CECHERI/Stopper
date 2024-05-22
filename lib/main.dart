@@ -4,6 +4,8 @@ import 'package:stopper/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'style.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
@@ -20,6 +22,7 @@ class MyApp extends StatelessWidget {
         appBar: AppBar(),
         body: Column(
           children: [
+            // 로고
             Expanded(
               flex: 1,
               child: Image.asset(
@@ -27,6 +30,7 @@ class MyApp extends StatelessWidget {
                 fit: BoxFit.cover,
               ),
             ),
+            // 기기 추가 버튼
             Expanded(
               flex: 2,
               child: AddButtons(),
@@ -56,19 +60,38 @@ class _AddDevice extends State<AddButtons> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
-        children: [
-          Expanded(
-            child: ListView.builder(
-              padding: EdgeInsets.symmetric(vertical: 20, horizontal: 50.0),
-              scrollDirection: Axis.horizontal,
-              itemCount: buttons.length,
-              itemBuilder: (context, index) {
-                return _buildButton(index);
-              },
+          children: [
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.symmetric(vertical: 20, horizontal: 20.0),
+                scrollDirection: Axis.horizontal,
+                itemCount: buttons.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    margin: EdgeInsets.symmetric(horizontal: 5.0),
+                    child: InkWell(
+                      onTap: () => _showEditDialog(index),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Container(
+                            height: 150,
+                            width: 150,
+                            child: Image.asset(
+                                'images/devices.png', fit: BoxFit.cover),
+                          ),
+                          Text(buttons[index].name, style: AppStyles.subTextStyle,)
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ]
       ),
+
+      // 기기 추가 버튼
       floatingActionButton: FloatingActionButton(
         onPressed: _addButton,
         child: Icon(Icons.add, color: Colors.black, size: 30),
@@ -77,34 +100,6 @@ class _AddDevice extends State<AddButtons> {
         highlightElevation: 0,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
-  }
-
-  @override
-  Widget _buildButton(int index) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 30.0),
-      child: InkWell(
-        onTap: () => _showEditDialog(index),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Container(
-              height: 150,
-              width: 150,
-              child: Image.asset('images/devices.png', fit: BoxFit.cover),
-            ),
-            Text(
-              buttons[index].dvName, // dvName을 표시
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -126,7 +121,6 @@ class _AddDevice extends State<AddButtons> {
   void _addButton() {
     setState(() {
       buttons.add(ButtonData('DEVICE${buttons.length + 1}', true, true, dvName: 'DEVICE${buttons.length + 1}'));
-      // Provide dvName as 'DEVICE${buttons.length + 1}'
     });
   }
 
@@ -134,8 +128,6 @@ class _AddDevice extends State<AddButtons> {
     TextEditingController nameController = TextEditingController(text: buttons[index].dvName); // dvName 사용
     bool tempIsActive1 = buttons[index].isActive1;
     bool tempIsActive2 = buttons[index].isActive2;
-    bool originalIsActive1 = tempIsActive1; // 초기 활성화 스위치 상태 저장
-    bool originalIsActive2 = tempIsActive2; // 초기 알림 스위치 상태 저장
 
     showDialog(
       context: context,
@@ -166,7 +158,7 @@ class _AddDevice extends State<AddButtons> {
                     ),
                     onChanged: (text) {
                       setState(() {
-                        buttons[index].dvName = text; // dvName을 변경한 값으로 설정
+                        buttons[index].dvName = text;
                       });
                     },
                   ),
@@ -223,12 +215,7 @@ class _AddDevice extends State<AddButtons> {
                     Spacer(),
                     TextButton(
                       onPressed: () {
-                        _saveDeviceStateToFirestore(
-                          buttons[index],
-                          tempIsActive1 ? true : false,
-                          tempIsActive2 ? true : false,
-                        );
-                        Navigator.of(context).pop();
+                        showApplyToAllDevicesDialog(index, tempIsActive1, tempIsActive2);
                       },
                       child: Text('저장', style: TextStyle(color: Colors.black54)),
                     ),
@@ -239,56 +226,88 @@ class _AddDevice extends State<AddButtons> {
           },
         );
       },
-    ).then((_) {
-      // 팝업이 닫힌 후에 기존 데이터를 다시 불러와서 스위치의 초기 상태를 설정
-      setState(() {
-        // 데이터베이스에서 가져온 값에 따라 스위치의 초기 상태 설정
-        buttons[index].isActive1 = tempIsActive1;
-        buttons[index].isActive2 = tempIsActive2;
-      });
-    }).then((_) async {
-      // Firestore에서 isActive1, isActive2 값 가져오기
-      DocumentSnapshot snapshot =
-      await FirebaseFirestore.instance.collection('device').doc(buttons[index].dvName).get(); // dvName 사용
+    ).then((_) async {
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance.collection('device').doc(buttons[index].dvName).get();
       if (snapshot.exists) {
-        // 데이터베이스에서 isActive1, isActive2 값 가져오기
-        Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?; // 캐스팅
+        Map<String, dynamic>? data = snapshot.data() as Map<String, dynamic>?;
         if (data != null) {
-          // null 체크
-          String? isActive1DB = data['isActive1'] as String?; // 캐스팅
-          String? isActive2DB = data['isActive2'] as String?; // 캐스팅
+          String? isActive1DB = data['isActive1'] as String?;
+          String? isActive2DB = data['isActive2'] as String?;
           if (isActive1DB != null && isActive2DB != null) {
-            // null 체크
             setState(() {
-              // isActive1, isActive2 값에 따라 스위치의 초기 상태 설정
-              buttons[index].isActive1 = isActive1DB == '1'; // '1'이면 true, 그 외에는 false로 설정
-              buttons[index].isActive2 = isActive2DB == '1'; // '1'이면 true, 그 외에는 false로 설정
+              buttons[index].isActive1 = isActive1DB == '1';
+              buttons[index].isActive2 = isActive2DB == '1';
             });
           }
         }
       }
     });
   }
-  void _deleteDeviceFromFirestore(ButtonData button) {
-    // Firestore에서 해당 문서 삭제
-    FirebaseFirestore.instance.collection('device').doc(button.name).delete();
+
+  void showApplyToAllDevicesDialog(int index, bool newIsActive1, bool newIsActive2) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Text('모든 기기에 적용하겠습니까?'),
+          actions: <Widget>[
+            TextButton(
+              child: Text('아니오'),
+              onPressed: () {
+                setState(() {
+                  buttons[index].isActive1 = newIsActive1;
+                  buttons[index].isActive2 = newIsActive2;
+                });
+                _saveDeviceStateToFirestore(buttons[index], newIsActive1, newIsActive2);
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text('예'),
+              onPressed: () {
+                setState(() {
+                  for (var button in buttons) {
+                    button.isActive1 = newIsActive1;
+                    button.isActive2 = newIsActive2;
+                  }
+                });
+                _saveDeviceStateToFirestoreForAll(newIsActive1, newIsActive2);
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
+
+  void _deleteDeviceFromFirestore(ButtonData button) {
+    FirebaseFirestore.instance.collection('device').doc(button.dvName).delete();
+  }
+
   void _saveDeviceStateToFirestore(ButtonData button, bool isActive1, bool isActive2) {
-    // Firestore에 연결
-    FirebaseFirestore.instance.collection('device').doc(button.name).set({
+    FirebaseFirestore.instance.collection('device').doc(button.dvName).set({
       'name': button.name,
-      'isActive1': isActive1 ? '1' : '0', // 활성화 스위치 상태 저장
-      'isActive2': isActive2 ? '1' : '0', // 알림 스위치 상태 저장
+      'isActive1': isActive1 ? '1' : '0',
+      'isActive2': isActive2 ? '1' : '0',
       'dvName': button.dvName,
     });
+  }
+
+  void _saveDeviceStateToFirestoreForAll(bool isActive1, bool isActive2) {
+    for (var button in buttons) {
+      _saveDeviceStateToFirestore(button, isActive1, isActive2);
+    }
   }
 }
 
 class ButtonData {
   String name;
-  String dvName; // 디바이스 이름을 저장할 필드 추가
+  String dvName;
   bool isActive1;
   bool isActive2;
 
-  ButtonData(this.name, this.isActive1, this.isActive2, {required this.dvName}); // 초기화 시 디바이스 이름과 동일하게 설정
+  ButtonData(this.name, this.isActive1, this.isActive2, {required this.dvName});
 }
