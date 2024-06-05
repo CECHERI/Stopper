@@ -53,6 +53,7 @@ class _AddDevice extends State<AddButtons> {
   @override
   void initState() {
     super.initState();
+    _fetchButtonsFromFirestore();
   }
 
   @override
@@ -100,6 +101,21 @@ class _AddDevice extends State<AddButtons> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
+  }
+
+  void _fetchButtonsFromFirestore() async {
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('device').get();
+    setState(() {
+      buttons = snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return ButtonData(
+          data['name'],
+          data['isActive1'] == '1',
+          data['isActive2'] == '1',
+          dvName: data['dvName'], // Include dvName in the data retrieval
+        );
+      }).toList();
+    });
   }
 
   void _addButton() {
