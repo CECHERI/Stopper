@@ -53,7 +53,6 @@ class _AddDevice extends State<AddButtons> {
   @override
   void initState() {
     super.initState();
-    _fetchButtonsFromFirestore();
   }
 
   @override
@@ -80,7 +79,7 @@ class _AddDevice extends State<AddButtons> {
                             child: Image.asset(
                                 'images/devices.png', fit: BoxFit.cover),
                           ),
-                          Text(buttons[index].name, style: AppStyles.subTextStyle,)
+                          Text(buttons[index].dvName, style: AppStyles.subTextStyle,)
                         ],
                       ),
                     ),
@@ -103,25 +102,11 @@ class _AddDevice extends State<AddButtons> {
     );
   }
 
-  void _fetchButtonsFromFirestore() async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('device').get();
-    setState(() {
-      buttons = snapshot.docs.map((doc) {
-        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-        return ButtonData(
-          data['name'],
-          data['isActive1'] == '1',
-          data['isActive2'] == '1',
-          dvName: data['dvName'], // Include dvName in the data retrieval
-        );
-      }).toList();
-    });
-  }
-
   void _addButton() {
     setState(() {
       buttons.add(ButtonData('DEVICE${buttons.length + 1}', true, true, dvName: 'DEVICE${buttons.length + 1}'));
     });
+    setState(() {});
   }
 
   void _showEditDialog(int index) {
@@ -209,6 +194,7 @@ class _AddDevice extends State<AddButtons> {
                         setState(() {
                           buttons.removeAt(index);
                         });
+                        //await _fetchButtonsFromFirestore();  // Firestore 데이터를 다시 불러옴
                         Navigator.of(context).pop();
                       },
                     ),
@@ -246,9 +232,9 @@ class _AddDevice extends State<AddButtons> {
 
   void showApplyToAllDevicesDialog(int index, bool newIsActive1, bool newIsActive2) {
     showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
+        context: context,
+        builder: (BuildContext context) {
+      return AlertDialog(
           content: Text('모든 기기에 적용하겠습니까?'),
           actions: <Widget>[
             TextButton(
@@ -285,6 +271,7 @@ class _AddDevice extends State<AddButtons> {
 
   void _deleteDeviceFromFirestore(ButtonData button) {
     FirebaseFirestore.instance.collection('device').doc(button.dvName).delete();
+    setState(() {});
   }
 
   void _saveDeviceStateToFirestore(ButtonData button, bool isActive1, bool isActive2) {
